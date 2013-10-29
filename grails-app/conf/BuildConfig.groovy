@@ -70,18 +70,14 @@ grails.project.dependency.resolution = {
 
     compile(":spring-security-core:2.0-RC2")
 
-    compile(":hibernate:2.2.4", ":tomcat:2.2.4") {
-      export = false
-    }
-
-    test(":geb:0.9.2-SNAPSHOT", ":functional-test-development:0.9.4", ":fixtures:1.3-SNAPSHOT", ":codenarc:0.19", ":code-coverage:1.2.6", ":guard:1.0.7") {
+    test(":geb:0.9.0", ":functional-test-development:0.9.4", ":fixtures:1.2", ":codenarc:0.18.1", ":code-coverage:1.2.6", ":guard:1.0.7", ":hibernate:${grailsVersion}") {
       export = false
     }
     test(":spock:0.7") {
       exclude "spock-grails-support"
       export = false
     }
-    build(':release:2.2.0', ':rest-client-builder:1.0.3') {
+    build(":tomcat:${grailsVersion}", ":hibernate:${grailsVersion}", ':release:2.2.1', ':rest-client-builder:1.0.3') {
       export = false
     }
   }
