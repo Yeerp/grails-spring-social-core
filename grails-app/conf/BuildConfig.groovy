@@ -70,7 +70,7 @@ grails.project.dependency.resolution = {
 
 //    compile(":spring-security-core:1.2.7.3")
 
-    compile(":hibernate:3.6.10.1", ":tomcat:7.0.42") {
+    compile(":hibernate:2.2.4", ":tomcat:2.2.4") {
       export = false
     }
 
@@ -81,7 +81,7 @@ grails.project.dependency.resolution = {
       exclude "spock-grails-support"
       export = false
     }
-    build(':release:3.0.1', ':rest-client-builder:1.0.3') {
+    build(':release:2.2.0', ':rest-client-builder:1.0.3') {
       export = false
     }
   }
