@@ -16,7 +16,7 @@
 import grails.plugins.springsocial.SpringSecuritySigninService
 
 class SpringSocialCoreGrailsPlugin {
-  def version = "0.1.34-SNAPSHOT" // added by set-version
+  def version = "0.1.34.local" // added by set-version
   def grailsVersion = "2.0.0 > *"
 
   def pluginExcludes = [
