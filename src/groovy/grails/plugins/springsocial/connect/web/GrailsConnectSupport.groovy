@@ -1,4 +1,4 @@
-/* Copyright 2013 Domingo Suarez Torres.
+/* Copyright 2011 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,6 @@
  */
 package grails.plugins.springsocial.connect.web
 
-import org.codehaus.groovy.grails.plugins.web.taglib.ApplicationTagLib
 import org.springframework.social.connect.Connection
 import org.springframework.social.connect.ConnectionFactory
 import org.springframework.social.connect.support.OAuth1ConnectionFactory
@@ -28,10 +27,10 @@ import org.springframework.social.oauth2.AccessGrant
 import org.springframework.social.oauth2.GrantType
 import org.springframework.social.oauth2.OAuth2Operations
 import org.springframework.social.oauth2.OAuth2Parameters
-import org.springframework.util.Assert
 import org.springframework.util.MultiValueMap
 import org.springframework.web.context.request.NativeWebRequest
 import org.springframework.web.context.request.RequestAttributes
+import org.codehaus.groovy.grails.plugins.web.taglib.ApplicationTagLib
 
 class GrailsConnectSupport extends ConnectSupport {
   private static final String OAUTH_TOKEN_ATTRIBUTE = "oauthToken";
@@ -39,7 +38,6 @@ class GrailsConnectSupport extends ConnectSupport {
   Boolean useAuthenticateUrl
 
   public String buildOAuthUrl(ConnectionFactory<?> connectionFactory, NativeWebRequest request, MultiValueMap<String, String> additionalParameters) {
-    Assert.notNull(connectionFactory, 'The connectionFactory is required')
     if (connectionFactory instanceof OAuth1ConnectionFactory) {
       return buildOAuth1Url((OAuth1ConnectionFactory<?>) connectionFactory, request, additionalParameters)
     } else if (connectionFactory instanceof OAuth2ConnectionFactory) {

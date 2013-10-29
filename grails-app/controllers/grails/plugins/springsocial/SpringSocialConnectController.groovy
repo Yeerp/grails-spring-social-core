@@ -1,4 +1,4 @@
-/* Copyright 2013 Domingo Suarez Torres.
+/* Copyright 2011 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,210 +14,112 @@
  */
 package grails.plugins.springsocial
 
-import grails.plugins.springsecurity.SpringSecurityService
-import grails.plugins.springsocial.config.DefaultConfig
+import grails.plugin.springsecurity.SpringSecurityUtils
 import grails.plugins.springsocial.connect.web.GrailsConnectSupport
 import org.codehaus.groovy.grails.web.servlet.mvc.GrailsWebRequest
-import org.springframework.core.GenericTypeResolver
-import org.springframework.social.connect.*
-import org.springframework.social.connect.web.ConnectInterceptor
-import org.springframework.social.connect.web.ConnectSupport
-import org.springframework.social.connect.web.DisconnectInterceptor
+import org.springframework.social.connect.ConnectionKey
+import org.springframework.social.connect.DuplicateConnectionException
 import org.springframework.util.Assert
 import org.springframework.util.LinkedMultiValueMap
 import org.springframework.util.MultiValueMap
-import org.springframework.web.context.request.NativeWebRequest
 import org.springframework.web.context.request.RequestAttributes
-import org.springframework.web.context.request.WebRequest
-import org.springframework.web.util.UrlPathHelper
 
-/**
- * Generic UI controller for managing the account-to-service-provider connection flow.
- * <ul>
- * <li>GET /connect/{providerId}  - Get a web page showing connection status to {providerId}.</li>
- * <li>POST /connect/{providerId} - Initiate an connection with {providerId}.</li>
- * <li>GET /connect/{providerId}?oauth_verifier||code - Receive {providerId} authorization callback and establish the connection.</li>
- * <li>DELETE /connect/{providerId} - Disconnect from {providerId}.</li>
- * </ul>
- *
- * This code was borrowed from SpringSocial code and adapted to Grails.
- * @see org.springframework.social.connect.web.ConnectController
- *
- * @author Domingo Suarez Torres
- */
 class SpringSocialConnectController {
-  private static final String DUPLICATE_CONNECTION_ATTRIBUTE = "social_addConnection_duplicate";
-  private static final String PROVIDER_ERROR_ATTRIBUTE = "social_provider_error";
-  private static final String AUTHORIZATION_ERROR_ATTRIBUTE = "social_authorization_error";
 
-  ConnectionFactoryLocator connectionFactoryLocator
-  ConnectionRepository connectionRepository
+  private static final String DUPLICATE_CONNECTION_EXCEPTION_ATTRIBUTE = "_duplicateConnectionException"
+  private static final String DUPLICATE_CONNECTION_ATTRIBUTE = "social.addConnection.duplicate"
 
-  ConnectSupport webSupport = new GrailsConnectSupport(mapping: 'springSocialConnect')
-  SpringSecurityService springSecurityService
+  def connectionFactoryLocator
+  def connectionRepository
 
-  private MultiValueMap<Class<?>, ConnectInterceptor<?>> connectInterceptors = new LinkedMultiValueMap<Class<?>, ConnectInterceptor<?>>()
-  MultiValueMap<Class<?>, DisconnectInterceptor<?>> disconnectInterceptors = new LinkedMultiValueMap<Class<?>, DisconnectInterceptor<?>>()
-  UrlPathHelper urlPathHelper = new UrlPathHelper()
-  String viewPath = "connect/"
+  def webSupport = new GrailsConnectSupport(mapping: "springSocialConnect")
 
   static allowedMethods = [connect: 'POST', oauthCallback: 'GET', disconnect: 'DELETE']
 
-  /**
-   * Configure the list of connect interceptors that should receive callbacks during the connection process.
-   * Convenient when an instance of this class is configured using a tool that supports JavaBeans-based configuration.
-   * @param interceptors the connect interceptors to add
-   */
-  void setConnectInterceptors(List<ConnectInterceptor<?>> interceptors) {
-    interceptors.each { ConnectInterceptor<?> interceptor ->
-      addInterceptor(interceptor);
-    }
-  }
-
-  /**
-   * Configure the list of discconnect interceptors that should receive callbacks when connections are removed.
-   * Convenient when an instance of this class is configured using a tool that supports JavaBeans-based configuration.
-   * @param interceptors the connect interceptors to add
-   */
-  public void setDisconnectInterceptors(List<DisconnectInterceptor<?>> interceptors) {
-    interceptors.each { DisconnectInterceptor<?> interceptor ->
-      addDisconnectInterceptor(interceptor)
-    }
-  }
-
-  /**
-   * Adds a ConnectInterceptor to receive callbacks during the connection process.
-   * Useful for programmatic configuration.
-   * @param interceptor the connect interceptor to add
-   */
-  public void addInterceptor(ConnectInterceptor<?> interceptor) {
-    Class<?> serviceApiType = GenericTypeResolver.resolveTypeArgument(interceptor.getClass(), ConnectInterceptor)
-    connectInterceptors.add(serviceApiType, interceptor)
-  }
-
-  /**
-   * Adds a DisconnectInterceptor to receive callbacks during the disconnection process.
-   * Useful for programmatic configuration.
-   * @param interceptor the connect interceptor to add
-   */
-  public void addDisconnectInterceptor(DisconnectInterceptor<?> interceptor) {
-    Class<?> serviceApiType = GenericTypeResolver.resolveTypeArgument(interceptor.getClass(), DisconnectInterceptor)
-    disconnectInterceptors.add(serviceApiType, interceptor)
-  }
-
-  def connect() {
+  def connect = {
     String result
-    if (springSecurityService.isLoggedIn()) {
-      String providerId = params.providerId
+    if (isLoggedIn()) {
+      def providerId = params.providerId
 
-      Assert.hasText(providerId, 'The providerId is required')
+      Assert.hasText(providerId, "The providerId is required")
 
-      ConnectionFactory connectionFactory = connectionFactoryLocator.getConnectionFactory(providerId)
-      MultiValueMap<String, String> parameters = new LinkedMultiValueMap<String, String>()
-
-      NativeWebRequest nativeWebRequest = new GrailsWebRequest(request, response, servletContext)
-
-      preConnect(connectionFactory, parameters, nativeWebRequest)
-
-
-      try {
-        result = webSupport.buildOAuthUrl(connectionFactory, nativeWebRequest, parameters)
-      } catch (e) {
-        request.setAttribute(PROVIDER_ERROR_ATTRIBUTE, e, RequestAttributes.SCOPE_SESSION)
-        result = connectionStatusRedirect(providerId, request)
-      }
+      def connectionFactory = connectionFactoryLocator.getConnectionFactory(providerId)
+      MultiValueMap<String, String> parameters = new LinkedMultiValueMap<String, String>();
+      //TODO: Handle preconnect filters
+      //preConnect(connectionFactory, parameters, request);
+      def nativeWebRequest = new GrailsWebRequest(request, response, servletContext)
+      result = webSupport.buildOAuthUrl(connectionFactory, nativeWebRequest, parameters)
       redirect url: result
     } else {
-      log.warn('The connect feature only is available for Signed Users. New users perhaps can use SignIn feature.')
-
-      result = getUrlLogin()
-      log.info("Redirecting to $result")
+      if (log.isWarnEnabled()) {
+        log.warn("The connect feature only is available for Signed Users. New users perhaps can use SignIn feature.")
+      }
+      //TODO: Document this parameters
+      result = session.ss_auth_loginFromUrl ?: SpringSecurityUtils.securityConfig.auth.loginFormUrl
       redirect uri: result
     }
   }
 
-  /**
-   * Returns a RedirectView with the URL to redirect to after a connection is created or deleted.
-   * Defaults to "/connect/{providerId}" relative to DispatcherServlet's path.
-   * May be overridden to handle custom redirection needs.
-   * @param providerId the ID of the provider for which a connection was created or deleted.
-   * @param request the NativeWebRequest used to access the servlet path when constructing the redirect path.
-   */
-  protected String connectionStatusRedirect(String providerId, NativeWebRequest request) {
-    /*HttpServletRequest servletRequest = request.getNativeRequest(HttpServletRequest)
-    String path = "/connect/" + providerId + getPathExtension(servletRequest)
-    if (prependServletPath(servletRequest)) {
-      path = servletRequest.getServletPath() + path
-    }
-    return new RedirectView(path, true)*/
-    ""
-  }
+  def oauthCallback = {
+    def providerId = params.providerId
 
-  def oauthCallback() {
-    String providerId = params.providerId
+    Assert.hasText(providerId, "The providerId is required")
 
-    Assert.hasText(providerId, 'The providerId is required')
-
-    ConfigObject config = getConfigByProviderId(providerId)
-
-    if (!config) {
-      //TODO: Maybe send a http status 50x
-      String result = getUrlLogin()
-      redirect uri: result
-      return
-    }
-    String denied = params.denied
+    def config = SpringSocialUtils.config.get(providerId)
+    def denied = params.denied
 
     if (denied) {
       //TODO: Document this parameters
-      String uriRedirectOnDenied = getPageDeniedHome(config)
-
-      log.info("The user has denied accesss to ${providerId} profile. Redirecting to uri: ${uriRedirectOnDenied}")
-
+      def uriRedirectOnDenied = session.ss_oauth_redirect_callback_on_denied ?: config.page.deniedHome
+      if (log.isInfoEnabled()) {
+        log.info("The user has denied accesss to ${providerId} profile. Redirecting to uri: ${uriRedirectOnDenied}")
+      }
       redirect(uri: uriRedirectOnDenied)
       return
     }
 
-    String uri = getPageConnectedHome(config)
+    //TODO: Document this parameter
+    def uriRedirect = session.ss_oauth_redirect_callback
 
-    ConnectionFactory connectionFactory = connectionFactoryLocator.getConnectionFactory(providerId)
-    NativeWebRequest nativeWebRequest = new GrailsWebRequest(request, response, servletContext)
-    Connection connection = webSupport.completeConnection(connectionFactory, nativeWebRequest)
+    //TODO: Document this parameter
+    def uri = uriRedirect ?: config.page.connectedHome
 
-    //addConnection(connection, connectionFactory, nativeWebRequest)
-    addConnection(connection, nativeWebRequest)
+    def connectionFactory = connectionFactoryLocator.getConnectionFactory(providerId)
+    def nativeWebRequest = new GrailsWebRequest(request, response, servletContext)
+    def connection = webSupport.completeConnection(connectionFactory, nativeWebRequest)
+
+    addConnection(connection, connectionFactory, nativeWebRequest)
     redirect(uri: uri)
   }
 
-  def disconnect() {
-    String providerId = params.providerId
-    String providerUserId = params.providerUserId
-    Assert.hasText(providerId, 'The providerId is required')
-
-    //TODO: implement this
-    //ConnectionFactory<?> connectionFactory = connectionFactoryLocator.getConnectionFactory(providerId)
-    //preDisconnect(connectionFactory, request)
+  def disconnect = {
+    def providerId = params.providerId
+    def providerUserId = params.providerUserId
+    Assert.hasText(providerId, "The providerId is required")
 
     if (providerUserId) {
-      log.info("Disconecting from ${providerId} to ${providerUserId}")
-      connectionRepository.removeConnection(new ConnectionKey(providerId, providerUserId))
+      if (log.isInfoEnabled()) {
+        log.info("Disconecting from ${providerId} to ${providerUserId}")
+      }
+      connectionRepository.removeConnection(new ConnectionKey(providerId, providerUserId));
     } else {
-      log.info("Disconecting from ${providerId}")
+      if (log.isInfoEnabled()) {
+        log.info("Disconecting from ${providerId}")
+      }
       connectionRepository.removeConnections(providerId)
     }
 
-    //TODO: implement this
-    //postDisconnect(connectionFactory, request)
+    def cfg = SpringSocialUtils.config.get(providerId)
 
-    ConfigObject config = getConfigByProviderId(providerId)
     //TODO: Document this parameter
-    String postDisconnectUri = getPagePostDisconnectHome(config)
-    log.info("redirecting to ${postDisconnectUri}")
+    def postDisconnectUri = params.ss_post_disconnect_uri ?: cfg.postDisconnectUri
+    if (log.isInfoEnabled()) {
+      log.info("redirecting to ${postDisconnectUri}")
+    }
     redirect(uri: postDisconnectUri)
   }
 
-  //private void addConnection(Connection<?> connection, ConnectionFactory<?> connectionFactory, WebRequest request) {
-  private void addConnection(Connection<?> connection, WebRequest request) {
+  private void addConnection(connection, connectionFactory, request) {
     try {
       connectionRepository.addConnection(connection)
       //TODO: handle post connections interceptors
@@ -225,45 +127,5 @@ class SpringSocialConnectController {
     } catch (DuplicateConnectionException e) {
       request.setAttribute(DUPLICATE_CONNECTION_ATTRIBUTE, e, RequestAttributes.SCOPE_SESSION)
     }
-  }
-
-  private String getUrlLogin() {
-    //TODO: Document this parameter
-    grailsApplication.config.springsocial?.loginUrl ?: DefaultConfig.loginUrl
-  }
-
-  private String getPageConnectedHome(ConfigObject config) {
-    //TODO: Document this parameter
-    config.page?.connectedHome ?: DefaultConfig.pageConnectedHome
-  }
-
-  private String getPageDeniedHome(ConfigObject config) {
-    //TODO: Document this parameter
-    config.page?.deniedHome ?: DefaultConfig.pageDeniedHome
-  }
-
-  private String getPagePostDisconnectHome(ConfigObject config) {
-    //TODO: Document this parameter
-    config?.page?.postDisconnectHome ?: DefaultConfig.pagePostDisconnectHome
-  }
-
-  private ConfigObject getConfigByProviderId(String providerId) {
-    grailsApplication.config.springsocial?.get(providerId)
-  }
-
-  @SuppressWarnings(["rawtypes", "unchecked"])
-  private void preConnect(ConnectionFactory<?> connectionFactory, MultiValueMap<String, String> parameters, WebRequest request) {
-    for (ConnectInterceptor interceptor : interceptingConnectionsTo(connectionFactory)) {
-      interceptor.preConnect(connectionFactory, parameters, request)
-    }
-  }
-
-  private List<ConnectInterceptor<?>> interceptingConnectionsTo(ConnectionFactory<?> connectionFactory) {
-    Class<?> serviceType = GenericTypeResolver.resolveTypeArgument(connectionFactory.getClass(), ConnectionFactory)
-    List<ConnectInterceptor<?>> typedInterceptors = connectInterceptors.get(serviceType)
-    if (typedInterceptors == null) {
-      typedInterceptors = Collections.emptyList()
-    }
-    typedInterceptors
   }
 }

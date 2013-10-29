@@ -1,4 +1,4 @@
-/* Copyright 2013 Domingo Suarez Torres.
+/* Copyright 2011 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,14 @@
  */
 package grails.plugins.springsocial.signin
 
+import javax.servlet.http.HttpServletRequest
+import javax.servlet.http.HttpServletResponse
+import javax.servlet.http.HttpSession
 import org.springframework.security.web.WebAttributes
 import org.springframework.security.web.savedrequest.RequestCache
 import org.springframework.social.connect.Connection
 import org.springframework.social.connect.web.SignInAdapter
 import org.springframework.web.context.request.NativeWebRequest
-
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
-import javax.servlet.http.HttpSession
 
 class SpringSocialSimpleSignInAdapter implements SignInAdapter {
   private RequestCache requestCache

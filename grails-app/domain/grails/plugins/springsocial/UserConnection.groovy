@@ -1,4 +1,4 @@
-/* Copyright 2013 Domingo Suarez Torres.
+/* Copyright 2011 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,48 +16,48 @@ package grails.plugins.springsocial
 
 class UserConnection implements Serializable {
 
-  String userId
-  String providerId
-  String providerUserId
-  String displayName
-  String profileUrl
-  String imageUrl
-  String accessToken
-  String secret
-  String refreshToken
-  Long rank
-  Long expireTime
+    String userId
+    String providerId
+    String providerUserId
+    String displayName
+    String profileUrl
+    String imageUrl
+    String accessToken
+    String secret
+    String refreshToken
+    Long rank
+    Long expireTime
 
-  static constraints = {
-    userId nullable: false
-    providerId nullable: false
-    providerUserId nullable: false
-    displayName nullable: true
-    profileUrl nullable: true
-    imageUrl nullable: true
-    accessToken nullable: false
-    secret nullable: true
-    refreshToken nullable: true
-    rank nullable: false
-    expireTime nullable: true
-  }
+    static constraints = {
+        userId nullable: false
+        providerId nullable: false
+        providerUserId nullable: false
+        displayName nullable: true
+        profileUrl nullable: true
+        imageUrl nullable: true
+        accessToken nullable: false
+        secret nullable: true
+        refreshToken nullable: true
+        rank nullable: false
+        expireTime nullable: true
+    }
 
-  static mapping = {
-    table "UserConnection"
-    version false
+    static mapping = {
+        table "UserConnection"
+        version false
 
-    id composite: ['userId', 'providerId', 'providerUserId']
+        id composite:['userId', 'providerId', 'providerUserId']
 
-    userId column: 'userId'
-    providerId column: 'providerId'
-    providerUserId column: 'providerUserId'
-    displayName column: 'displayName'
-    profileUrl column: 'profileUrl'
-    imageUrl column: 'imageUrl'
-    accessToken column: 'accessToken'
-    secret column: 'secret'
-    refreshToken column: 'refreshToken'
-    rank column: 'rank'
-    expireTime column: 'expireTime'
-  }
+        userId column:'userId'
+        providerId column:'providerId'
+        providerUserId column:'providerUserId'
+        displayName column:'displayName'
+        profileUrl column:'profileUrl'
+        imageUrl column:'imageUrl'
+        accessToken column:'accessToken'
+        secret column:'secret'
+        refreshToken column:'refreshToken'
+        rank column:'rank'
+        expireTime column:'expireTime'
+    }
 }

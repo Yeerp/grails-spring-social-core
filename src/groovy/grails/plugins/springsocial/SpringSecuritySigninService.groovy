@@ -1,4 +1,4 @@
-/* Copyright 2013 Domingo Suarez Torres.
+/* Copyright 2011 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,9 @@ package grails.plugins.springsocial
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 
-class SpringSecuritySigninService {
+class SpringSecuritySigninService  {
 
-  void signIn(String localUserId) {
-    SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(localUserId, null, null))
-  }
+    void signIn(String localUserId) {
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(localUserId, null, null))
+    }
 }

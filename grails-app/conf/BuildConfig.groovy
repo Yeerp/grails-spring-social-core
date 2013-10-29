@@ -55,7 +55,7 @@ grails.project.dependency.resolution = {
     mavenRepo "http://repo.springsource.org/libs-snapshot"
   }
   dependencies {
-    def springSocialVersion = "1.1.0.BUILD-SNAPSHOT"
+    def springSocialVersion = "1.0.3.RELEASE"
 
     compile("org.springframework.social:spring-social-core:${springSocialVersion}") { transitive = false }
     compile("org.springframework.social:spring-social-web:${springSocialVersion}") { transitive = false }
@@ -68,7 +68,7 @@ grails.project.dependency.resolution = {
   }
   plugins {
 
-    compile(":spring-security-core:1.2.7.3")
+//    compile(":spring-security-core:1.2.7.3")
 
     compile(":hibernate:3.6.10.1", ":tomcat:7.0.42") {
       export = false
